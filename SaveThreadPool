@@ -9,7 +9,7 @@ import com.bsj.util.ExceptionUtil;
 
 /**
  * 启动线程池，执行写文件操作
- * @author chengcong
+ * @author huolanqi
  *
  */
 public class SaveThreadPool{
