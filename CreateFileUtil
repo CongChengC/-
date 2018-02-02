@@ -1,0 +1,196 @@
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import org.apache.log4j.Logger;
+
+import com.bsj.util.ExceptionUtil;
+import com.bsj.util.PropertiesUtilLocal;  
+	  
+public class CreateFileUtil {
+	
+	 static Logger logger = Logger.getLogger(CreateFileUtil.class);
+	     
+	 public static boolean createFile(String destFileName) {  
+	        File file = new File(destFileName);  
+	        if(file.exists()) {  
+	            //System.out.println("创建单个文件" + destFileName + "失败，目标文件已存在！");  
+	            return false;  
+	        } 
+	        
+	        if (destFileName.endsWith(File.separator)) {  
+	            System.out.println("创建单个文件" + destFileName + "失败，目标文件不能为目录！");  
+	            return false;  
+	        }  
+	        //判断目标文件所在的目录是否存在  
+	        if(!file.getParentFile().exists()) {  
+	            //如果目标文件所在的目录不存在，则创建父目录  
+	            System.out.println("目标文件所在目录不存在，准备创建它！");  
+	            if(!file.getParentFile().mkdirs()) {  
+	                System.out.println("创建目标文件所在目录失败！");  
+	                return false;  
+	            }  
+	        }  
+	        //创建目标文件  
+	        try {  
+	            if (file.createNewFile()) {  
+	                System.out.println("创建单个文件" + destFileName + "成功！");  
+	                return true;  
+	            } else {  
+	                System.out.println("创建单个文件" + destFileName + "失败！");  
+	                return false;  
+	            }  
+	        } catch (IOException e) {  
+	            e.printStackTrace();  
+	            System.out.println("创建单个文件" + destFileName + "失败！" + e.getMessage());  
+	            return false;  
+	        }  
+	    }  
+	     
+	    public static boolean createDir(String destDirName) {  
+	        File dir = new File(destDirName);  
+	        if (dir.exists()) {  
+	            //System.out.println("创建目录" + destDirName + "失败，目标目录已经存在");  
+	            return false;  
+	        }  
+	        if (!destDirName.endsWith(File.separator)) {  
+	            destDirName = destDirName + File.separator;  
+	        }  
+	        //创建目录  
+	        if (dir.mkdirs()) {  
+	            System.out.println("创建目录" + destDirName + "成功！");  
+	            return true;  
+	        } else {  
+	            System.out.println("创建目录" + destDirName + "失败！");  
+	            return false;  
+	        }  
+	    }  
+	     
+	     
+	    public static String createTempFile(String prefix, String suffix, String dirName) {  
+	        File tempFile = null;  
+	        if (dirName == null) {  
+	            try{  
+	                //在默认文件夹下创建临时文件  
+	                tempFile = File.createTempFile(prefix, suffix);  
+	                //返回临时文件的路径  
+	                return tempFile.getCanonicalPath();  
+	            } catch (IOException e) {  
+	                e.printStackTrace();  
+	                System.out.println("创建临时文件失败！" + e.getMessage());  
+	                return null;  
+	            }  
+	        } else {  
+	            File dir = new File(dirName);  
+	            //如果临时文件所在目录不存在，首先创建  
+	            if (!dir.exists()) {  
+	                if (!CreateFileUtil.createDir(dirName)) {  
+	                    System.out.println("创建临时文件失败，不能创建临时文件所在的目录！");  
+	                    return null;  
+	                }  
+	            }  
+	            try {  
+	                //在指定目录下创建临时文件  
+	                tempFile = File.createTempFile(prefix, suffix, dir);  
+	                return tempFile.getCanonicalPath();  
+	            } catch (IOException e) {  
+	                e.printStackTrace();  
+	                System.out.println("创建临时文件失败！" + e.getMessage());  
+	                return null;  
+	            }  
+	        }  
+	    }  
+	    
+	    /**
+	     * 输入终端编号，创建以日期为目录，终端编号为名称的txt文件,同时返回文件路径
+	     * @param args
+	     */
+	    private static String createTerminalFile(String terminalNum){
+	    	//获取文件存储根目录
+	    	String rootDirPath = PropertiesUtilLocal.getConfig("rootDirPath");
+	    	SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd"); 
+	    	String  formatTime = sdf.format(new Date());
+	    	String  dirName = rootDirPath+"/"+formatTime;
+	    	CreateFileUtil.createDir(dirName);
+	        //创建文件  
+	        String fileName = dirName + "/"+terminalNum+".txt";  
+	        CreateFileUtil.createFile(fileName);
+	        return fileName;
+	    }
+	    
+	    /**
+	     * 写入TXT，逐行写入
+	     * @param filePath
+	     * @param content
+	     */
+	    public static void fileChaseFW(String filePath, String content) {
+	        try {
+	        	//true表示追加到末尾
+	        	BufferedWriter writer = new BufferedWriter(new FileWriter(new File(filePath),true));
+	        	writer.append("\t\n"+content);
+	        	writer.flush();//使用Buffered***时一定要先清缓冲区再关闭流
+	        	writer.close();
+	        } catch (IOException e) {
+	            logger.error("文件写入失败！" + ExceptionUtil.getStackStr(e));
+	        }
+	    }
+	    
+	    /**
+	     * 创建格式化写入的内容
+	     * @param terminalNum
+	     * @return
+	     */
+	    public static void writeTerminalFile(String terminalNum ,String ip,int port,int len,String original){
+	    	// 日期,IP,Port,数据长度,原始数据
+	    	SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"); 
+	    	String  formatTime = sdf.format(new Date());
+	    	//内容
+	    	String content=formatTime+","+ip+","+port+","+len+","+original;
+	    	//建立文件
+	    	String filePath = createTerminalFile(terminalNum);
+	        //逐行写入
+	    	fileChaseFW(filePath, content);		
+	    }
+	     
+	    public static void main(String[] args) {
+	    	
+//	    	 //创建目录  
+//	        String dirName = "E:/work/temp/temp0/temp1";  
+//	        CreateFileUtil.createDir(dirName);  
+//	        //创建文件  
+//	        String fileName = dirName + "/temp2/tempFile.txt";  
+//	        CreateFileUtil.createFile(fileName);  
+//	        //创建临时文件  
+//	        String prefix = "temp";  
+//	        String suffix = ".txt";  
+//	        for (int i = 0; i < 10; i++) {  
+//	            System.out.println("创建了临时文件："  
+//	                    + CreateFileUtil.createTempFile(prefix, suffix, dirName));  
+//	        }  
+//	        //在默认目录下创建临时文件  
+//	        for (int i = 0; i < 10; i++) {  
+//	            System.out.println("在默认目录下创建了临时文件："  
+//	                    + CreateFileUtil.createTempFile(prefix, suffix, null));  
+//	        }  
+	    	
+
+	    	String terminalNum="13762582098";
+//	    	String filePath = createTerminalFile(terminalNum);
+//	    	System.out.println(filePath);
+	       
+	    	String ip="192.168.230.70";
+	    	int port=6655;
+	    	int len=20;
+	    	String original="ID861234567890END";
+	    	
+	    	writeTerminalFile(terminalNum, ip, port, len, original);
+	    	
+	    	
+	    }  
+	  
+	}  
+
+
