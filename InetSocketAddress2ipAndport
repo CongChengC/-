@@ -1,0 +1,24 @@
+		
+    
+    //UDP直接用InetSocketAddress 获取
+    InetSocketAddress socketAddr = packet.sender();
+		int port = socketAddr.getPort(); // 端口
+		InetAddress inetAddr = socketAddr.getAddress(); // 主机地址
+		String ipStr = inetAddr.getHostAddress(); // IP
+    
+    // TCP先Channel获取InetSocketAddress
+    Channel channel = ctx.channel();
+					ChannelId channelId = null;
+					String ip = "";
+					String channelIdStr = "";
+					InetSocketAddress inetSocket = null;
+					if (channel != null) {
+						channelId = channel.id();
+						inetSocket = (InetSocketAddress) channel.remoteAddress();
+						if (channelId != null) {
+							channelIdStr = channelId.asShortText();
+						}
+					}
+    
+    
+		
