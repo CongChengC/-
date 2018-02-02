@@ -1,0 +1,113 @@
+package com.bsj.fakeTerminal.cache;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import org.apache.log4j.Logger;
+
+import com.bsj.util.ExceptionUtil;
+
+/**
+ * 启动线程池，执行写文件操作
+ * @author chengcong
+ *
+ */
+public class SaveThreadPool{
+
+	static Logger logger = Logger.getLogger(SaveThreadPool.class);
+	static int QueueExeThreadCount = 4; // 线程数,可配置
+	static int emitCount = 500; // 每次从队列中取出的个数
+	static volatile boolean running = true; // 是否运行
+	// 线程池
+	static ExecutorService cachedThreadPool = Executors.newCachedThreadPool();
+	private static Thread thread = null;
+
+	/**
+	 * 开始
+	 * 
+	 * @throws Exception
+	 * 
+	 */
+	public static void start() throws Exception {
+		// 写信息线程
+		thread = new Thread(new Runnable() {
+			public void run() {
+				while (running) {
+					try {
+						Thread.sleep(50);
+						handRun();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		});
+		thread.start();
+
+	}
+
+	/**
+	 * 停止
+	 * 
+	 * @throws Exception
+	 */
+	public static void stop() {
+		try {
+			if (thread != null) {
+				thread.interrupt();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		logger.info("批量执行写文件完毕...");
+	}
+
+	/**
+	 * 存储RDS
+	 */
+	private static void handRun() {
+		try {
+			for (int i = 0; i < QueueExeThreadCount; i++) {
+				cachedThreadPool.execute(new Runnable() {
+					public void run() {
+
+						// 取出写日志数据RDS的Queue
+//						Queue<A5DataInfo>  a5LogQueue = null;
+//						try {
+//							a5LogQueue = A5LogDataQueue.popQueue(emitCount);
+//						} catch (Exception e) {
+//							e.printStackTrace();
+//						}
+//
+//						// 解析
+//						List<A5DataInfo> a5LogList = new ArrayList<>();
+//						if (a5LogQueue != null && !a5LogQueue.isEmpty()) {
+//							Iterator<A5DataInfo> interator = a5LogQueue.iterator();
+//							while (interator.hasNext()) {
+//								A5DataInfo a5Info = interator.next();
+//								a5LogList.add(a5Info);
+//							}
+//						}
+//
+//						//写日志RDS
+//						if (!a5LogList.isEmpty()) {
+//							try {
+//								for (A5DataInfo info : a5LogList) {
+//									String tableName = info.getTableName();
+//									JdbcCmdLog.addA5DataInfo(info, jdbcWriter, tableName);
+//								}
+//							} catch (Exception e) {
+//								logger.error("存储RDS内容异常：" + ExceptionUtil.getStackStr(e));
+//							}
+//						}
+						
+					}
+				});
+			}
+		} catch (Exception e) {
+			logger.error("存储Rds错误：" + ExceptionUtil.getStackStr(e));
+		}
+
+	}
+
+}
