@@ -1,0 +1,22 @@
+
+
+public static String getDevid(byte[] data, int offset) {
+			StringBuffer sb = new StringBuffer();
+			long devid = (((data[offset] & 0xF0) >> 4) * 10 + (data[offset] & 0x0F) * 1) * 10000000000l
+					+ (((data[offset + 1] & 0xF0) >> 4) * 10 + (data[offset + 1] & 0x0F) * 1) * 100000000l
+					+ (((data[offset + 2] & 0xF0) >> 4) * 10 + (data[offset + 2] & 0x0F) * 1) * 1000000l
+					+ (((data[offset + 3] & 0xF0) >> 4) * 10 + (data[offset + 3] & 0x0F) * 1) * 10000l
+					+ (((data[offset + 4] & 0xF0) >> 4) * 10 + (data[offset + 4] & 0x0F) * 1) * 100l
+					+ (((data[offset + 5] & 0xF0) >> 4) * 10 + (data[offset + 5] & 0x0F) * 1) * 1l;
+
+			sb.append(devid);
+			int len = sb.length();
+			if (len < 11) {
+				int index = 11 - len;
+				for (int i = 0; i < index; i++) {
+					sb.insert(0, "0");
+				}
+
+			}
+			return sb.toString();
+		}
