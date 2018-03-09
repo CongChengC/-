@@ -1,0 +1,602 @@
+package com.bsj.util;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.ValueFilter;
+import com.bsj.common.def.DvehicleGroup;
+import com.bsj.common.def.DvehicleInfo;
+import jdk.nashorn.internal.runtime.regexp.joni.Regex;
+import org.apache.commons.lang.StringUtils;
+
+import java.math.BigDecimal;
+import java.text.NumberFormat;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * Created by Administrator on 2017/4/19.
+ */
+public class DataUntil {
+
+	static Random random = new Random();
+
+	static Pattern pattern = Pattern.compile("-?[0-9]+.?[0-9]+");
+
+	/**
+	 * 超过2000条的数据进行扩充
+	 * @param list
+	 * @return
+	 */
+	public static List<List<Long>> containerExpansion(List<Long> list) {
+		final int pointsDataLimit = 2000;
+		List<List<Long>> lists = new ArrayList<>();
+		if (list == null || list.isEmpty()) {
+			return lists;
+		}
+		int size = list.size();
+		if (size <= pointsDataLimit) {
+			lists.add(list);
+		} else {
+			//分批数
+			int part = size / pointsDataLimit;
+			//余数
+			int remainder = list.size() % pointsDataLimit;
+			List<Long> listPage = new LinkedList<>();
+			for (int i = 0; i <= part; i++) {
+				if (i == part) {
+					listPage = list.subList(i * pointsDataLimit, pointsDataLimit * i + remainder);
+				} else {
+					listPage = list.subList(i * pointsDataLimit, pointsDataLimit * (i + 1));
+				}
+				lists.add(listPage);
+			}
+		}
+		return lists;
+	}
+
+	/**
+	 * 数据分组，用于数据量大的情况。
+	 * @param list 数据集合
+	 * @param num 一组多少个数据
+	 * @return
+	 */
+	public static <T> List<List<T>> splitData(List<T> list, int num) {
+		List<List<T>> lists = new ArrayList<List<T>>();
+		if (list == null || list.isEmpty()) {
+			return lists;
+		}
+
+		// 一组数据个数小于等于0，那么默认100个一组。
+		if (num <= 0) {
+			num = 100;
+		}
+
+		int size = list.size(); // 总数
+		int count = size / num; // 分组数
+		if (size <= num) {
+			lists.add(list);
+		} else {
+			List<T> subList = new LinkedList<T>();
+			for (int i = 0; i <= count; i++) {
+				if (i == count) {
+					subList = list.subList(i * num, size);
+				} else {
+					subList = list.subList(i * num, num * (i + 1));
+				}
+                if(!subList.isEmpty()){
+                	lists.add(subList);
+                }
+			}
+		}
+
+		return lists;
+	}
+
+    /**
+     * 优化方案，对一个大list分成多个小list
+     * @param list
+     * @return
+     */
+    public static List<List<DvehicleGroup>> containerExpansionByGroupList(
+            List<DvehicleGroup> list) {
+        final int pointsDataLimit = 100;
+        List<List<DvehicleGroup>> lists = new LinkedList<>();
+        if (list == null || list.isEmpty()) {
+            return lists;
+        }
+        int size = list.size();
+        if (size <= pointsDataLimit) {
+            lists.add(list);
+        } else {
+            //分批数
+            int part = size / pointsDataLimit;
+            //余数
+            int remainder = list.size() % pointsDataLimit;
+            List<DvehicleGroup> listPage = new LinkedList<>();
+            for (int i = 0; i <= part; i++) {
+                if(i == part){
+                    listPage = list.subList(i * pointsDataLimit,
+                            pointsDataLimit * i + remainder);
+                }else {
+                    listPage = list.subList(i * pointsDataLimit,
+                            pointsDataLimit * (i + 1));
+                }
+                lists.add(listPage);
+            }
+        }
+        return lists;
+    }
+
+	/**
+	 * 判断是否全为空
+	 * @param strArr
+	 * @return
+     */
+	public static boolean isAllEmpty(String... strArr){
+		if(strArr == null || strArr.length == 0){
+			return true;
+		}
+		int length = strArr.length;
+		for (int i = 0; i < length; i++) {
+			String str = strArr[i];
+			if(StringUtils.isNotEmpty(str)){
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public static boolean isEmpty(String... strArr){
+		if(strArr == null || strArr.length == 0){
+			return true;
+		}
+		int length = strArr.length;
+		for (int i = 0; i < length; i++) {
+			String str = strArr[i];
+			if(StringUtils.isEmpty(str)){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static boolean isNull(Object... objs){
+		if(objs == null || objs.length == 0){
+			return true;
+		}
+		for(Object o : objs){
+			if(o == null){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * 字符串转化为数组
+	 * @param str 字符串
+	 * @param split 分隔符號
+     * @return
+     */
+	public static String[] strToArray(String str,String split){
+		if(StringUtils.isEmpty(str) || StringUtils.isEmpty(split)){
+			return new String[]{};
+		}
+		return str.split(split);
+	}
+
+
+	/**
+	 * 校验是否过期
+	 * @return
+	 */
+	public static Boolean checkIsExpiredByVehicle(Date expireDate) {
+		if (expireDate == null) {
+			return false;
+		}
+		if (new Date().getTime() > expireDate.getTime()) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * 是否在线
+	 * @param time
+	 * @return
+     */
+	public static boolean isOnLine(long time) {
+		long systemTime = System.currentTimeMillis();
+
+		// 系统时间减终端时间的差值，单位毫秒
+		long diff = systemTime - time;
+		if (diff <= 15 * 60 * 1000) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * 自定义离线时间
+	 * @param time 当前时常
+	 * @param min 分钟
+     * @return
+     */
+	public static boolean isOnLine(long time, long min) {
+		long systemTime = System.currentTimeMillis();
+
+		// 系统时间减终端时间的差值，单位毫秒
+		long diff = systemTime - time;
+		if (diff <= min * 60 * 1000) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * 一天的毫秒数
+	 * @return
+     */
+	public static long dayTime(){
+		return  24 * 60 * 60 * 1000;
+	}
+
+	/**
+	 * 获得空字符串
+	 * @param str
+	 * @return
+	 */
+	public static String getStringEmpty(String str){
+		if (str == null){
+			return "";
+		}else {
+			return str;
+		}
+	}
+
+	/**
+	 * 修改车辆时候需要改的备注
+	 * @param updateInfo
+	 * @param oldInfo
+	 * @param remark
+	 * @return
+	 */
+	public static String updateVehicleRemark(DvehicleInfo updateInfo, DvehicleInfo oldInfo, String remark) {
+		if (updateInfo == null || oldInfo == null) {
+			return remark;
+		}
+		//所属车组
+		String newG = getStringEmpty(updateInfo.getGroupName());
+		String oldG = getStringEmpty(oldInfo.getGroupName());
+		if (!newG.equals(oldG)) {
+			remark = remark + "所属车组从" + oldG + "修改为" + newG + ";";
+		}
+		//车架号
+		String newFrameNo = getStringEmpty(updateInfo.getFrameNo());
+		String oldFrameNo = getStringEmpty(oldInfo.getFrameNo());
+		if (!newFrameNo.equals(oldFrameNo)) {
+			remark = remark + "车架号从" + oldFrameNo + "修改为" + newFrameNo + ";";
+		}
+		//发动机号
+		String newEngineNo = getStringEmpty(updateInfo.getEngineNo());
+		String oldEngineNo = getStringEmpty(oldInfo.getEngineNo());
+		if (!newEngineNo.equals(oldEngineNo)) {
+			remark = remark + "发动机号从" + oldFrameNo + "修改为" + newFrameNo + ";";
+		}
+		//车主
+		String newOwner = getStringEmpty(updateInfo.getOwner());
+		String oldOwner = getStringEmpty(oldInfo.getOwner());
+		if (!newOwner.equals(oldOwner)) {
+			remark = remark + "车主从" + oldOwner + "修改为" + newOwner + ";";
+		}
+		//证件号
+		String newLicense = getStringEmpty(updateInfo.getLicense());
+		String oldLicense = getStringEmpty(oldInfo.getLicense());
+		if (!newLicense.equals(oldLicense)) {
+			remark = remark + "证件号从" + oldLicense + "修改为" + newLicense + ";";
+		}
+		//车辆品牌（车型）
+		String newBrand = getStringEmpty(updateInfo.getBrand());
+		String oldBrand = getStringEmpty(oldInfo.getBrand());
+		if (!newBrand.equals(oldBrand)) {
+			remark = remark + "车型从" + oldBrand + "修改为" + newBrand + ";";
+		}
+		//车主地址
+		String newAddress = getStringEmpty(updateInfo.getAddress());
+		String oldAddress = getStringEmpty(oldInfo.getAddress());
+		if (!newAddress.equals(oldAddress)) {
+			remark = remark + "车主地址从" + oldAddress + "修改为" + newAddress + ";";
+		}
+		//安装人员
+		String newPerson = getStringEmpty(updateInfo.getInstallPerson());
+		String oldPerson = getStringEmpty(oldInfo.getInstallPerson());
+		if (!newPerson.equals(oldPerson)) {
+			remark = remark + "安装人员从" + oldPerson + "修改为" + newPerson + ";";
+		}
+		//安装地点
+		String newPlace = getStringEmpty(updateInfo.getInstallPlace());
+		String oldPlace = getStringEmpty(oldInfo.getInstallPlace());
+		if (!newPlace.equals(oldPlace)) {
+			remark = remark + "安装地点从" + oldPlace + "修改为" + newPlace + ";";
+		}
+		//联系方式
+		String newPhone = getStringEmpty(updateInfo.getPhone());
+		String oldPhone = getStringEmpty(oldInfo.getPhone());
+		if (!newPhone.equals(oldPhone)) {
+			remark = remark + "联系方式从" + oldPhone + "修改为" + newPhone + ";";
+		}
+		//服务密码
+		String newCode = getStringEmpty(updateInfo.getServiceCode());
+		String oldCode = getStringEmpty(oldInfo.getServiceCode());
+		if (!newCode.equals(oldCode)) {
+			remark = remark + "服务密码从" + oldCode + "修改为" + newCode + ";";
+		}
+		//备注
+		String newRemark = getStringEmpty(updateInfo.getRemark());
+		String oldRemark = getStringEmpty(oldInfo.getRemark());
+		if (!newRemark.equals(oldRemark)) {
+			remark = remark + "备注从" + oldRemark + "修改为" + newRemark + ";";
+		}
+		//安装时间
+		String newDate = getStringEmpty(updateInfo.getInstallDate());
+		String oldDate = getStringEmpty(oldInfo.getInstallDate());
+		if (!newDate.equals(oldDate)) {
+			remark = remark + "安装时间从" + oldDate + "修改为" + newDate + ";";
+		}
+		return remark;
+	}
+
+
+	public static <T> List<T> pagingByList(List<T> list, int pageSize,
+										   int pageNumber) {
+		if(list == null || pageSize == 0 || pageNumber == 0){
+			return list;
+		}else {
+			int size = list.size();
+			// 开始索引
+			int startIndex = (pageNumber - 1) * pageSize;
+			// 结束索引
+			int endIndex = startIndex + pageSize;
+			if(startIndex > size){
+				return list;
+			} else {
+				if(endIndex > size){
+					endIndex = size;
+				}
+				return list.subList(startIndex, endIndex);
+			}
+		}
+	}
+
+	public static byte[] intToByteArray(int a) {
+		return new byte[] {
+				(byte) ((a >> 24) & 0xFF),
+				(byte) ((a >> 16) & 0xFF),
+				(byte) ((a >> 8) & 0xFF),
+				(byte) (a & 0xFF)
+		};
+	}
+
+	/**
+	 * @param b
+	 * @return int
+	 */
+	public static int byteArrayToInt(byte[] b){
+		byte[] a = new byte[4];
+		int i = a.length - 1,j = b.length - 1;
+		for (; i >= 0 ; i--,j--) {//从b的尾部(即int值的低位)开始copy数据
+			if(j >= 0)
+				a[i] = b[j];
+			else
+				a[i] = 0;//如果b.length不足4,则将高位补0
+		}
+		int v0 = (a[0] & 0xff) << 24;//&0xff将byte值无差异转成int,避免Java自动类型提升后,会保留高位的符号位
+		int v1 = (a[1] & 0xff) << 16;
+		int v2 = (a[2] & 0xff) << 8;
+		int v3 = (a[3] & 0xff) ;
+		return v0 + v1 + v2 + v3;
+	}
+
+	/**
+	 * 合并数据
+	 * @param a
+	 * @param b
+     * @return
+     */
+	public static byte[] concatAll(byte[] a, byte[] b) {
+		byte[] c = new byte[a.length + b.length];
+		System.arraycopy(a, 0, c, 0, a.length);
+		System.arraycopy(b, 0, c, a.length, b.length);
+		return c;
+	}
+
+	/**
+	 * 差集输出逗号分隔
+	 * @param one
+	 * @param two
+     * @return
+     */
+	public static String handleDifferenceStr(String[] one, String[] two) {
+		String result = "";
+		if (one == null) {
+			return null;
+		}
+		if (two == null) {
+			result = StringUtils.join(one, ",");
+		} else {
+			List<String> resultList = new ArrayList<>(Arrays.asList(one));
+			resultList.removeAll(Arrays.asList(two));
+			result = StringUtils.join(resultList,",");
+		}
+		return result;
+	}
+
+	/**
+	 * 获取比例方法
+	 *
+	 * @param num1
+	 * @param num2
+	 * @return
+	 */
+	public static String getRatio(double num1, double num2) {
+		// 创建一个数值格式化对象
+		NumberFormat numberFormat = NumberFormat.getInstance();
+		// 设置精确到小数点后2位
+		numberFormat.setMaximumFractionDigits(2);
+		String result = numberFormat.format((float) num1 / (float) num2 * 100);
+		result = result + "%";
+		return result;
+	}
+
+	private static ValueFilter filter = new ValueFilter() {
+		@Override
+		public Object process(Object obj, String s, Object v) {
+			if (v == null)
+				return "";
+			return v;
+		}
+	};
+
+	/**
+	 * null转空字符
+	 * @param o
+	 * @return
+     */
+	public static String nullIsStringByObject(Object o){
+		if(o == null){
+			return null;
+		}
+		String json = JSON.toJSONString(o, filter);
+		return json;
+	}
+
+	/**
+	 * 判断是否是数字的正则表达式
+	 * @param str
+	 * @return
+     */
+	public static boolean isNumericzidai(String str) {
+		if(StringUtils.isEmpty(str)){
+			return false;
+		}
+		Matcher isNum = pattern.matcher(str);
+		if (!isNum.matches()) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * 取出匹配到的车牌号
+	 * @param str 字符串
+	 * @return
+     */
+	public static String getCarNumberByStr(String str) {
+		String express = "([\\u4e00-\\u9fa5][a-zA-Z](([DF](?![a-zA-Z0-9]*[IO])[0-9]{4,5})|([0-9]{5}[DF])))|([冀豫云辽黑湘皖鲁苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼渝京津沪新京军空海北沈兰济南广成使领A-Z]{1}[a-zA-Z0-9]{5,6}[a-zA-Z0-9挂学警港澳]{1})";
+		Pattern pattern = Pattern.compile(express);
+		Matcher matcher = pattern.matcher(str);
+		boolean b = matcher.find();
+		if (b) {
+			return matcher.group();
+		} else {
+			return "";
+		}
+	}
+
+	/**
+	 * int值转化
+	 * @param o
+	 * @return
+     */
+	public static int intChange(Object o){
+		if(o == null){
+			return 0;
+		}
+		if(o instanceof Integer){
+			return (int) o;
+		}
+		if(o instanceof String){
+			return Integer.parseInt((String) o);
+		}else {
+			return 0;
+		}
+	}
+
+	/**
+	 * 获得httpUrl
+	 * @param url url值
+	 * @param names 名称
+	 * @param params 值
+     * @return
+     */
+	public static String getHttpUrl(String url, String[] names, String[] params) {
+		if (StringUtils.isEmpty(url)) {
+			return "";
+		}
+		if (params == null || params.length == 0) {
+			return url;
+		}
+		StringBuffer stringBuffer = new StringBuffer(url);
+		for (int i = 0; i < params.length; i++) {
+			if (i != 0) {
+				stringBuffer.append("&");
+			}
+			stringBuffer.append(names[i] + "=" + params[i]);
+		}
+		return stringBuffer.toString();
+	}
+
+	/**
+	 * 字符串转化为double类型
+	 * @param s
+	 * @return
+     */
+	public static double strToDouble(String s){
+		if(StringUtils.isEmpty(s)){
+			return 0;
+		}
+		try {
+			double d = Double.parseDouble(s);
+			return d;
+		}catch (Exception e){
+			return 0;
+		}
+	}
+
+	/**
+	 * 字符串转化为int值
+	 * @param s
+	 * @return
+     */
+	public static int strToInt(String s){
+		if(StringUtils.isEmpty(s)){
+			return 0;
+		}
+		try {
+			int d = Integer.parseInt(s);
+			return d;
+		}catch (Exception e){
+			return 0;
+		}
+	}
+
+	//获得随即数
+	public static String randomCode(int i) {
+		int num = (int) Math.pow(10, i);
+		int statNum = num - 1;
+		int endNum = num / 10;
+		int resultNum = random.nextInt(statNum - endNum + 1) + endNum;
+		return String.valueOf(resultNum);
+	}
+
+	public static String getSpace(int count) {
+		StringBuilder stringBuilder = new StringBuilder();
+		for (int i = 0; i < count; i++) {
+			stringBuilder.append(" ");
+		}
+		return stringBuilder.toString();
+	}
+}
