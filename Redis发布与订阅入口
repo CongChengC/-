@@ -49,3 +49,62 @@ public class SubThread extends Thread {
 		}
 	}
 }
+
+
+
+
+public class CmdStarter {
+	static Logger logger = Logger.getLogger(CmdStarter.class);
+
+	
+	static SubThread subPutThread = new SubThread(ConstantUtil.PUTCHANNEL);
+	static SubThread subDelThread = new SubThread(ConstantUtil.DELCHANNEL);
+
+	public static void start() throws Exception {
+		
+	
+		
+		logger.info("初始化命令下发添加到内存订阅.");
+		
+		
+		subPutThread.start();
+
+		logger.info("初始化命令下发删除内存订阅.");
+		//CommandDownConsumer.start();
+		subDelThread.start();
+		
+		
+		
+
+	}
+
+	public static void stop() {
+
+	
+		
+		logger.info("关闭命令下发订阅.");
+		CommandDownConsumer.stop();	
+		
+		logger.info("关闭命令下发添加与删除内存订阅.");
+		subPutThread.interrupt();;;
+		subDelThread.interrupt();
+		
+	}
+	
+	/**
+	 * 测试发布与订阅
+	 * @param args
+	 * @throws Exception
+	 */
+	public static void main(String[] args) throws Exception {
+		PropertyConfigurator.configure("conf/log4j.properties");
+		start();
+		Publisher Publisher = new Publisher();
+		Publisher.start();
+	}
+	
+
+}
+
+
+
