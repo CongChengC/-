@@ -1,0 +1,48 @@
+
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+import com.bsj.a5cmd.util.ConstantUtil;
+import com.bsj.util.JedisBSJFactory;
+
+import redis.clients.bsj.JedisClusterBSJ;
+
+public class Publisher {
+
+	
+	public Publisher() {
+		
+	}
+
+	public void start() {
+		BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+		// 获取JEDIS
+		JedisClusterBSJ jedis = JedisBSJFactory.getJedis();
+		if (jedis == null) {
+			System.out.println("JedisBsjFactory.getJedis() fail");
+			return;
+		}
+		while (true) {
+			String line = null;
+			try {
+				line = reader.readLine();
+				if (!"quit".equals(line)) {
+					
+					jedis.publish(ConstantUtil.PUTCHANNEL, line);
+					System.out.println("channel:"+ConstantUtil.PUTCHANNEL+"/line:"+line);
+				
+					jedis.publish(ConstantUtil.DELCHANNEL, line);
+					System.out.println("channel:"+ConstantUtil.DELCHANNEL+"/line:"+line);
+					
+				} else {
+					System.out.println("line:"+line);
+					break;
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+}
