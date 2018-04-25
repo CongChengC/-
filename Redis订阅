@@ -1,0 +1,70 @@
+
+
+import org.apache.log4j.Logger;
+
+import com.alibaba.fastjson.JSON;
+import com.bsj.a5cmd.cache.CmdCachedMap;
+import com.bsj.a5cmd.entity.SourceCommand;
+import com.bsj.a5cmd.util.ConstantUtil;
+import com.bsj.common.ptest.NumSave;
+
+import redis.clients.jedis.JedisPubSub;
+
+public class RedisMsgPubSubListener extends JedisPubSub {  
+    
+	static Logger logger = Logger.getLogger(RedisMsgPubSubListener.class);
+	
+	public RedisMsgPubSubListener() {
+		
+    }
+	
+    @Override  
+    public void onMessage(String channel, String message) {  
+        //this.unsubscribe();//取消订阅
+    	System.out.println("Redis订阅到命令下发添加内存操作信息:" + message+"/通道:"+channel);
+    	//添加订阅
+    	if(channel.equals(ConstantUtil.PUTCHANNEL)){
+    		if (message != null) {
+    			SourceCommand command=null;
+				try {
+					command = JSON.parseObject(message, SourceCommand.class);
+				} catch (Exception e) {
+					System.out.println("JSON.parseObject fail:" + message+"/"+ConstantUtil.PUTCHANNEL);
+				}
+    			if (command != null) {
+    				NumSave.add("commandDownAddTotal", 1);
+    				CmdCachedMap.modifyMap(command, command.getTerminalNum());
+    			}
+    		}
+    	}
+    	
+    	//删除订阅
+    	if(channel.equals(ConstantUtil.DELCHANNEL)){
+    		if (message != null) {
+				SourceCommand command=null;
+				try {
+					command = JSON.parseObject(message, SourceCommand.class);
+				} catch (Exception e) {
+					System.out.println("JSON.parseObject fail:" + message +"/"+ConstantUtil.DELCHANNEL);
+				}
+				if (command != null) {
+					NumSave.add("commandDownDelTotal", 1);
+					// 内存删除下发信息
+					CmdCachedMap.delCmdCached(command.getTerminalNum());
+				}
+			}
+    	}
+    	
+    }  
+  
+    @Override  
+    public void onSubscribe(String channel, int subscribedChannels) {  
+        System.out.println("channel:" + channel + " is been subscribed:" + subscribedChannels);  
+    }  
+  
+    @Override  
+    public void onUnsubscribe(String channel, int subscribedChannels) {  
+        System.out.println("channel:" + channel + " is been unsubscribed:" + subscribedChannels);  
+    }  
+    
+}  
