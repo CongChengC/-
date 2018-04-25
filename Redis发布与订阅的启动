@@ -1,0 +1,51 @@
+
+
+import java.io.IOException;
+
+import org.apache.log4j.Logger;
+
+import com.bsj.a5cmd.Filter.Output;
+import com.bsj.a5cmd.cmdDown.RedisSubscribe;
+import com.bsj.util.ExceptionUtil;
+import com.bsj.util.JedisBSJFactory;
+
+import redis.clients.bsj.JedisClusterBSJ;
+
+public class SubThread extends Thread {
+
+	static Logger logger = Logger.getLogger(SubThread.class);
+
+
+	private final RedisMsgPubSubListener subscriber = new RedisMsgPubSubListener();
+
+	
+	private String channel;
+
+	public SubThread(String channel) {
+		super("SubThread");
+		this.channel = channel;
+	}
+
+	@Override
+	public void run() {
+		// 获取JEDIS
+		JedisClusterBSJ jedis = JedisBSJFactory.getJedis();
+		if (jedis == null) {
+			logger.warn("JedisBsjFactory.getJedis() fail");
+			return;
+		}
+		try {
+			jedis.subscribe(subscriber,channel);
+		} catch (Exception e) {
+			System.out.println(String.format("subsrcibe channel error, %s", e));
+		} finally {
+			if (jedis != null) {
+				try {
+					jedis.close();
+				} catch (IOException e) {
+					logger.error("jedis.close() fail:"+ExceptionUtil.getStackStr(e));
+				}
+			}
+		}
+	}
+}
