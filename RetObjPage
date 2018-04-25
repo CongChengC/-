@@ -82,3 +82,16 @@ public class RetObjPage<T>{
         this.extend = extend;
     }
 }
+
+
+
+后台查询得到数据后分页方法：
+RetObjPage ret = new RetObjPage();
+if (a5LogDataList != null) {
+	ret.setTotal(a5LogDataList.size());
+	List resultList = DataUntil.pagingByList(a5LogDataList, pageSize, pageNumber);
+	ret.setRows(resultList);
+}
+
+
+
