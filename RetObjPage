@@ -1,0 +1,84 @@
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by Administrator on 2017/4/15.
+ */
+public class RetObjPage<T>{
+
+    int total;
+    //0错误，1成功，2警告
+    int flag;
+    //错误或警告的详细信息
+    String msg;
+    //业务结构，JSON格式
+    List<T> rows;
+    //扩展信息
+    Map<String, Object> extend;
+
+    public List<T> getRows() {
+        return rows;
+    }
+
+    public void setRows(List<T> rows) {
+        this.rows = rows;
+    }
+
+    /***
+     * 设置为错误
+     * @param msg
+     */
+    public void Fail(String msg){
+        flag = 0;
+        this.msg = msg;
+    }
+
+    public void FailServer(){
+        flag = 0;
+        this.msg = "服务器查询失败，请重试";
+    }
+
+    /**
+     * 参数不对
+     */
+    public void failInvalidParam(){
+        flag = 0;
+        this.msg = "参数不对";
+    }
+    public RetObjPage(){
+        flag = 1;
+    }
+
+    public int getTotal() {
+        return total;
+    }
+
+    public void setTotal(int total) {
+        this.total = total;
+    }
+
+    public int getFlag() {
+        return flag;
+    }
+
+    public void setFlag(int flag) {
+        this.flag = flag;
+    }
+
+    public String getMsg() {
+        return msg;
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
+    }
+
+    public Map<String, Object> getExtend() {
+        return extend;
+    }
+
+    public void setExtend(Map<String, Object> extend) {
+        this.extend = extend;
+    }
+}
